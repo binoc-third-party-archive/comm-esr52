@@ -1318,9 +1318,9 @@ nsPop3Protocol::Error(const char* err_code,
                 }
 
                 nsAutoString message(alertString);
-                message.AppendLiteral(" ");
+                message.Append(' ');
                 message.Append(serverSaidPrefix);
-                message.AppendLiteral(" ");
+                message.Append(' ');
                 message.Append(NS_ConvertASCIItoUTF16(m_commandResponse));
                 dialog->Alert(dialogTitle.get(), message.get());
               }
