@@ -1049,7 +1049,7 @@ nsMsgAttachmentHandler::LoadDataFromFile(nsIFile *file, nsString &sigData, bool 
   nsDependentCString cstringReadBuf(readBuf, bytesRead);
   if (charsetConversion)
   {
-    if (NS_FAILED(ConvertToUnicode(m_charset.get(), cstringReadBuf, sigData)))
+    if (NS_FAILED(nsMsgI18NConvertToUnicode(m_charset, cstringReadBuf, sigData)))
       CopyASCIItoUTF16(cstringReadBuf, sigData);
   }
   else
@@ -1228,7 +1228,7 @@ nsMsgAttachmentHandler::UrlExit(nsresult status, const char16_t* aMsg)
         if (NS_SUCCEEDED(rv))
         {
           nsAutoCString tData;
-          if (NS_FAILED(ConvertFromUnicode(m_charset.get(), conData, tData)))
+          if (NS_FAILED(nsMsgI18NConvertFromUnicode(m_charset, conData, tData)))
             LossyCopyUTF16toASCII(conData, tData);
           if (!tData.IsEmpty())
           {

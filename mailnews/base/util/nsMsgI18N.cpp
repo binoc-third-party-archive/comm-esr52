@@ -31,8 +31,8 @@
 // International functions necessary for composition
 //
 
-nsresult nsMsgI18NConvertFromUnicode(const char* aCharset,
-                                     const nsString& inString,
+nsresult nsMsgI18NConvertFromUnicode(const nsACString& aCharset,
+                                     const nsAString& inString,
                                      nsACString& outString,
                                      bool aIsCharsetCanonical,
                                      bool aReportUencNoMapping)
@@ -43,13 +43,14 @@ nsresult nsMsgI18NConvertFromUnicode(const char* aCharset,
   }
   // Note: This will hide a possible error if the Unicode contains more than one
   // charset, e.g. Latin1 + Japanese.
-  else if (!aReportUencNoMapping && (!*aCharset ||
-             !PL_strcasecmp(aCharset, "us-ascii") ||
-             !PL_strcasecmp(aCharset, "ISO-8859-1"))) {
+  else if (!aReportUencNoMapping &&
+           (aCharset.IsEmpty() ||
+            aCharset.Equals("us-ascii", nsCaseInsensitiveCStringComparator()) ||
+            aCharset.Equals("ISO-8859-1", nsCaseInsensitiveCStringComparator()))) {
     LossyCopyUTF16toASCII(inString, outString);
     return NS_OK;
   }
-  else if (!PL_strcasecmp(aCharset, "UTF-8")) {
+  else if (aCharset.Equals("UTF-8", nsCaseInsensitiveCStringComparator())) {
     CopyUTF16toUTF8(inString, outString);
     return NS_OK;
   }
@@ -61,9 +62,9 @@ nsresult nsMsgI18NConvertFromUnicode(const char* aCharset,
 
   // get an unicode converter
   if (aIsCharsetCanonical)  // optimize for modified UTF-7 used by IMAP
-    rv = ccm->GetUnicodeEncoderRaw(aCharset, getter_AddRefs(encoder));
+    rv = ccm->GetUnicodeEncoderRaw(PromiseFlatCString(aCharset).get(), getter_AddRefs(encoder));
   else
-    rv = ccm->GetUnicodeEncoder(aCharset, getter_AddRefs(encoder));
+    rv = ccm->GetUnicodeEncoder(PromiseFlatCString(aCharset).get(), getter_AddRefs(encoder));
   NS_ENSURE_SUCCESS(rv, rv);
   // Must set behavior to kOnError_Signal if we want to receive the
   // NS_ERROR_UENC_NOMAPPING signal, should it occur.
@@ -72,7 +73,7 @@ nsresult nsMsgI18NConvertFromUnicode(const char* aCharset,
   rv = encoder->SetOutputErrorBehavior(behavior, nullptr, '?');
   NS_ENSURE_SUCCESS(rv, rv);
 
-  const char16_t *originalSrcPtr = inString.get();
+  const char16_t *originalSrcPtr = inString.BeginReading();;
   const char16_t *currentSrcPtr = originalSrcPtr;
   int32_t originalUnicharLength = inString.Length();
   int32_t srcLength;
@@ -116,8 +117,8 @@ nsresult nsMsgI18NConvertFromUnicode(const char* aCharset,
   return rv;
 }
 
-nsresult nsMsgI18NConvertToUnicode(const char* aCharset,
-                                   const nsCString& inString, 
+nsresult nsMsgI18NConvertToUnicode(const nsACString& aCharset,
+                                   const nsACString& inString,
                                    nsAString& outString,
                                    bool aIsCharsetCanonical)
 {
@@ -125,13 +126,14 @@ nsresult nsMsgI18NConvertToUnicode(const char* aCharset,
     outString.Truncate();
     return NS_OK;
   }
-  else if (!*aCharset || !PL_strcasecmp(aCharset, "us-ascii") ||
-           !PL_strcasecmp(aCharset, "ISO-8859-1")) {
+  else if (aCharset.IsEmpty() || 
+           aCharset.Equals("us-ascii", nsCaseInsensitiveCStringComparator()) ||
+           aCharset.Equals("ISO-8859-1", nsCaseInsensitiveCStringComparator())) {
     // Despite its name, it also works for Latin-1.
     CopyASCIItoUTF16(inString, outString);
     return NS_OK;
   }
-  else if (!PL_strcasecmp(aCharset, "UTF-8")) {
+  else if (aCharset.Equals("UTF-8", nsCaseInsensitiveCStringComparator())) {
     if (MsgIsUTF8(inString)) {
       nsAutoString tmp;
       CopyUTF8toUTF16(inString, tmp);
@@ -152,12 +154,12 @@ nsresult nsMsgI18NConvertToUnicode(const char* aCharset,
 
   // get an unicode converter
   if (aIsCharsetCanonical)  // optimize for modified UTF-7 used by IMAP
-    rv = ccm->GetUnicodeDecoderRaw(aCharset, getter_AddRefs(decoder));
+    rv = ccm->GetUnicodeDecoderRaw(PromiseFlatCString(aCharset).get(), getter_AddRefs(decoder));
   else
-    rv = ccm->GetUnicodeDecoderInternal(aCharset, getter_AddRefs(decoder));
+    rv = ccm->GetUnicodeDecoderInternal(PromiseFlatCString(aCharset).get(), getter_AddRefs(decoder));
   NS_ENSURE_SUCCESS(rv, rv);
 
-  const char *originalSrcPtr = inString.get();
+  const char *originalSrcPtr = inString.BeginReading();
   const char *currentSrcPtr = originalSrcPtr;
   int32_t originalLength = inString.Length();
   int32_t srcLength;
@@ -183,7 +185,7 @@ nsresult nsMsgI18NConvertToUnicode(const char* aCharset,
 }
 
 // Charset used by the file system.
-const char * nsMsgI18NFileSystemCharset()
+const nsACString& nsMsgI18NFileSystemCharset()
 {
   /* Get a charset used for the file. */
   static nsAutoCString fileSystemCharset;
@@ -200,7 +202,7 @@ const char * nsMsgI18NFileSystemCharset()
     if (NS_FAILED(rv)) 
       fileSystemCharset.Assign("ISO-8859-1");
   }
-  return fileSystemCharset.get();
+  return fileSystemCharset;
 }
 
 // Charset used by the text file.
@@ -225,8 +227,10 @@ char * nsMsgI18NEncodeMimePartIIStr(const char *header, bool structured, const c
   // No MIME, convert to the outgoing mail charset.
   if (false == usemime) {
     nsAutoCString convertedStr;
-    if (NS_SUCCEEDED(ConvertFromUnicode(charset, NS_ConvertUTF8toUTF16(header),
-                                        convertedStr)))
+    if (NS_SUCCEEDED(nsMsgI18NConvertFromUnicode(nsDependentCString(charset),
+                                                 NS_ConvertUTF8toUTF16(header),
+                                                 convertedStr)))
+
       return PL_strdup(convertedStr.get());
     else
       return PL_strdup(header);
@@ -312,7 +316,7 @@ bool nsMsgI18Ncheck_data_in_charset_range(const char *charset, const char16_t* i
   // if the conversion was not successful then try fallback to other charsets
   if (!result && fallbackCharset) {
     nsCString convertedString;
-    res = nsMsgI18NConvertFromUnicode(*fallbackCharset,
+    res = nsMsgI18NConvertFromUnicode(nsDependentCString(*fallbackCharset),
       nsDependentString(inString), convertedString, false, true);
     result = (NS_SUCCEEDED(res) && NS_ERROR_UENC_NOMAPPING != res);
   }
@@ -421,7 +425,7 @@ nsresult nsMsgI18NShrinkUTF8Str(const nsCString &inString,
 }
 
 void nsMsgI18NConvertRawBytesToUTF16(const nsCString& inString, 
-                                     const char* charset,
+                                     const nsACString& charset,
                                      nsAString& outString)
 {
   if (MsgIsUTF8(inString))
@@ -430,7 +434,7 @@ void nsMsgI18NConvertRawBytesToUTF16(const nsCString& inString,
     return;
   }
 
-  nsresult rv = ConvertToUnicode(charset, inString, outString);
+  nsresult rv = nsMsgI18NConvertToUnicode(charset, inString, outString);
   if (NS_SUCCEEDED(rv))
     return;
 
@@ -447,7 +451,7 @@ void nsMsgI18NConvertRawBytesToUTF16(const nsCString& inString,
 }
 
 void nsMsgI18NConvertRawBytesToUTF8(const nsCString& inString, 
-                                    const char* charset,
+                                    const nsACString& charset,
                                     nsACString& outString)
 {
   if (MsgIsUTF8(inString))
@@ -457,7 +461,7 @@ void nsMsgI18NConvertRawBytesToUTF8(const nsCString& inString,
   }
 
   nsAutoString utf16Text;
-  nsresult rv = ConvertToUnicode(charset, inString, utf16Text);
+  nsresult rv = nsMsgI18NConvertToUnicode(charset, inString, utf16Text);
   if (NS_SUCCEEDED(rv))
   {
     CopyUTF16toUTF8(utf16Text, outString);
