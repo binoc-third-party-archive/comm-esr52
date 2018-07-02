@@ -3,26 +3,26 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef _MIMETHSA_H_
-#define _MIMETHSA_H_
+#ifndef _MIMETEXTHTMLPARSED_H_
+#define _MIMETEXTHTMLPARSED_H_
 
 #include "mimethtm.h"
 
-typedef struct MimeInlineTextHTMLSanitizedClass MimeInlineTextHTMLSanitizedClass;
-typedef struct MimeInlineTextHTMLSanitized      MimeInlineTextHTMLSanitized;
+typedef struct MimeInlineTextHTMLParsedClass MimeInlineTextHTMLParsedClass;
+typedef struct MimeInlineTextHTMLParsed      MimeInlineTextHTMLParsed;
 
-struct MimeInlineTextHTMLSanitizedClass {
+struct MimeInlineTextHTMLParsedClass {
   MimeInlineTextHTMLClass html;
 };
 
-extern MimeInlineTextHTMLSanitizedClass mimeInlineTextHTMLSanitizedClass;
+extern MimeInlineTextHTMLParsedClass mimeInlineTextHTMLParsedClass;
 
-struct MimeInlineTextHTMLSanitized {
+struct MimeInlineTextHTMLParsed {
   MimeInlineTextHTML    html;
   nsString             *complete_buffer;  // Gecko parser expects wide strings
 };
 
-#define MimeInlineTextHTMLSanitizedClassInitializer(ITYPE,CSUPER) \
+#define MimeInlineTextHTMLParsedClassInitializer(ITYPE,CSUPER) \
   { MimeInlineTextHTMLClassInitializer(ITYPE,CSUPER) }
 
-#endif /* _MIMETHPL_H_ */
+#endif /* _MIMETEXTHTMLPARSED_H_ */
