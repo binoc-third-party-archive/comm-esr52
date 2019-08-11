@@ -2605,6 +2605,10 @@ var gMessageNotificationBar =
 
   remoteOrigins: null,
 
+  isShowingJunkNotification: function() {
+    return !!this.mMsgNotificationBar.getNotificationWithValue("junkContent");
+  },
+
   setRemoteContentMsg: function(aMsgHdr, aContentURI, aCanOverride)
   {
     // remoteOrigins is a Set of all blockable Origins.
