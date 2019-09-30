@@ -14,19 +14,21 @@
 DEFAULTS = {
     # Global Default Revision
     'REV': "default",
+    'COMM_BRANCH': "SEAMONKEY_2_49_ESR_RELBRANCH",
 
     # URL of the default hg repository to clone for ChatZilla.
     'CHATZILLA_REPO': 'https://hg.mozilla.org/chatzilla/',
     # The stable revision to use
-      'CHATZILLA_REV':  'SEA2_48_RELBRANCH',
+    # 'CHATZILLA_REV':  'default',
 
     # URL of the default hg repository to clone for DOM Inspector.
     'INSPECTOR_REPO': 'https://hg.mozilla.org/dom-inspector/',
     # The stable revision to use
-      'INSPECTOR_REV':  'DOMI_2_0_17',
+    # 'INSPECTOR_REV':  'default',
 
     # URL of the default hg repository to clone for Mozilla.
     'MOZILLA_REPO': 'https://hg.mozilla.org/releases/mozilla-esr52/',
+    'MOZILLA_BRANCH': "SEAMONKEY_2_49_ESR_RELBRANCH",
 }
 
 REPO_SHORT_NAMES = {
@@ -40,6 +42,12 @@ def get_DEFAULT_tag(index):
         return DEFAULTS[index]
     else:
         return DEFAULTS['REV']
+
+def get_BRANCH_tag(index):
+    if index in DEFAULTS:
+        return DEFAULTS[index]
+    else:
+        return ''
 
 # The set of defaults below relate to the current switching mechanism between
 # trunk or branches and back again if it is required.
@@ -317,7 +325,7 @@ def backup_cvs_extension(extensionName, extensionDir, extensionPath):
         sys.exit("Error: %s directory renaming failed!" % extensionName)
 
 
-def do_hg_pull(dir, repository, hg, rev, hgtool=None, hgtool1=None):
+def do_hg_pull(dir, repository, hg, rev, branch, hgtool=None, hgtool1=None):
     """Clone if the dir doesn't exist, pull if it does.
     """
 
@@ -371,7 +379,11 @@ def do_hg_pull(dir, repository, hg, rev, hgtool=None, hgtool1=None):
             check_call_noisy(cmd, retryMax=options.retries)
 
         # update to specific revision
-        cmd = [hg, 'update', '-r', rev, '-R', fulldir] + hgopts
+        if rev != 'default':
+            cmd = [hg, 'update', '-r', rev, '-R', fulldir] + hgopts
+        else:
+            cmd = [hg, 'update', branch, '-R', fulldir] + hgopts
+
         if options.verbose:
             cmd.append('-v')
         # Explicitly never retry 'hg update': otherwise any merge failures are
@@ -546,6 +558,7 @@ def fixup_comm_repo_options(options):
     if options.comm_rev is None:
         options.comm_rev = get_DEFAULT_tag("COMM_REV")
 
+    options.comm_branch = get_BRANCH_tag("COMM_BRANCH")
 
 def fixup_mozilla_repo_options(options):
     """Handle special case: initial checkout of Mozilla.
@@ -582,6 +595,7 @@ def fixup_mozilla_repo_options(options):
     # If no version was set before, use the default mozilla revision.
     if options.mozilla_rev is None:
         options.mozilla_rev = get_DEFAULT_tag("MOZILLA_REV")
+    options.mozilla_branch = get_BRANCH_tag("MOZILLA_BRANCH")
 
 
 def fixup_chatzilla_repo_options(options):
@@ -601,6 +615,7 @@ def fixup_chatzilla_repo_options(options):
     if options.chatzilla_rev is None:
         options.chatzilla_rev = get_DEFAULT_tag("CHATZILLA_REV")
 
+    options.chatzilla_branch = get_BRANCH_tag("CHATZILLA_BRANCH")
 
 def fixup_inspector_repo_options(options):
     """Handle special case: initial checkout of DOM Inspector.
@@ -618,6 +633,7 @@ def fixup_inspector_repo_options(options):
     if options.inspector_rev is None:
         options.inspector_rev = get_DEFAULT_tag("INSPECTOR_REV")
 
+    options.inspector_branch = get_BRANCH_tag("CHATZILLA_BRANCH")
 
 def get_last_known_good_mozilla_rev():
     kg_url = "http://build.mozillamessaging.com/buildbot/production/known-good-revisions/mozilla-central.txt"
@@ -652,7 +668,8 @@ if action in ('checkout', 'co'):
 
     if not options.skip_comm:
         fixup_comm_repo_options(options)
-        do_hg_pull('.', options.comm_repo, options.hg, options.comm_rev)
+        do_hg_pull('.', options.comm_repo, options.hg, options.comm_rev,
+                   options.comm_branch)
 
     if not options.skip_mozilla:
         if options.known_good and options.mozilla_rev is None:
@@ -662,7 +679,8 @@ if action in ('checkout', 'co'):
 
         fixup_mozilla_repo_options(options)
         do_hg_pull('mozilla', options.mozilla_repo, options.hg,
-                   options.mozilla_rev, options.hgtool, options.hgtool1)
+                   options.mozilla_rev, options.mozilla_branch, options.hgtool,
+                   options.hgtool1)
 
     # Check whether destination directory exists for these extensions.
     if (not options.skip_chatzilla or not options.skip_inspector) and \
@@ -674,12 +692,14 @@ if action in ('checkout', 'co'):
     if not options.skip_chatzilla:
         fixup_chatzilla_repo_options(options)
         do_hg_pull(os.path.join('mozilla', 'extensions', 'irc'),
-                   options.chatzilla_repo, options.hg, options.chatzilla_rev)
+                   options.chatzilla_repo, options.hg, options.chatzilla_rev,
+                   options.chatzilla_branch)
 
     if not options.skip_inspector:
         fixup_inspector_repo_options(options)
         do_hg_pull(os.path.join('mozilla', 'extensions', 'inspector'),
-                   options.inspector_repo, options.hg, options.inspector_rev)
+                   options.inspector_repo, options.hg, options.inspector_rev,
+                   options.inspector_branch)
 
     if options.apply_patches:
         do_apply_patches(topsrcdir, options.hg)
