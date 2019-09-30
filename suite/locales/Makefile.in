@@ -209,6 +209,7 @@ ident:
 merge-%:
 ifdef LOCALE_MERGEDIR
 	$(RM) -rf $(LOCALE_MERGEDIR)
+	$(MKDIR) -p $(LOCALE_MERGEDIR)
 	$(topsrcdir)/mozilla/mach compare-locales --merge-dir $(LOCALE_MERGEDIR) --l10n-ini $(srcdir)/l10n.ini $*
 endif
 	@echo
@@ -278,3 +279,9 @@ endif
 INSTALLERS_TARGETS = clobber-% $(CALENDAR_INSTALLERS_TARGETS) langpack-% repackage-win32-installer-% repackage-zip-%
 installers-%: $(INSTALLERS_TARGETS)
 	@echo 'repackaging done'
+
+repack-%: AB_CD=$*
+repack-%:
+	$(MAKE) clobber-zip AB_CD=$(AB_CD)
+	$(MAKE) merge-$(AB_CD)
+	$(MAKE) installers-$(AB_CD) MOZ_MAKE_COMPLETE_MAR=1
