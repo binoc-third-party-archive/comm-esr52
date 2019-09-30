@@ -71,6 +71,7 @@
 #include "nsIMsgFilterList.h"
 #include "nsDirectoryServiceUtils.h"
 #include "mozilla/Services.h"
+#include <string>
 #include <algorithm>
 #include "nsIFileStreams.h"
 #include "nsIOutputStream.h"
@@ -372,6 +373,46 @@ nsMsgAccountManager::GetUniqueServerKey(nsACString& aResult)
     } while (server);
     return;
   }
+}
+
+template<size_t N>
+static bool
+StartsWith(const std::string& haystack, const char (&needle)[N])
+{
+    return haystack.compare(0, N - 1, needle) == 0;
+}
+
+nsresult
+nsMsgAccountManager::CleanServerValidState()
+{
+  nsresult rv;
+  nsCOMPtr<nsIPrefService> prefService =
+    do_GetService(NS_PREFSERVICE_CONTRACTID, &rv);
+  NS_ENSURE_SUCCESS(rv, rv);
+
+  nsCOMPtr<nsIPrefBranch> prefBranch;
+
+  rv = prefService->GetBranch(PREF_MAIL_SERVER_PREFIX,
+                              getter_AddRefs(prefBranch));
+  NS_ENSURE_SUCCESS(rv, rv);
+
+  uint32_t count;
+  char **prefList;
+
+  rv = prefBranch->GetChildList("", &count, &prefList);
+  NS_ENSURE_SUCCESS(rv, rv);
+
+  // Traverse the list, and look for .valid prefs.
+  for (uint32_t i = count; i--;) {
+    // Check if it is a server*.valid key and if yes delete it.
+    nsDependentCString prefName(prefList[i]);
+    if (StringEndsWith(prefName, NS_LITERAL_CSTRING(".valid")) &&
+        StartsWith(prefName.get(), "server")) {
+      prefBranch->ClearUserPref(prefName.get());
+    }
+  }
+
+  return NS_OK;
 }
 
 nsresult
@@ -1158,6 +1199,9 @@ nsMsgAccountManager::LoadAccounts()
   // It is ok to return null accounts like when we create new profile.
   m_accountsLoaded = true;
   m_haveShutdown = false;
+
+  // Clean up servers. Necessary for later account creation see bug 511861.
+  rv = CleanServerValidState();
 
   if (accountList.IsEmpty())
       return NS_OK;

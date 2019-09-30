@@ -193,6 +193,9 @@ private:
   // Scan the preferences to find a unique server key
   void GetUniqueServerKey(nsACString& aResult);
 
+  // Delete Server valid preference.
+  nsresult CleanServerValidState();
+
   nsresult RemoveFolderFromSmartFolder(nsIMsgFolder *aFolder,
                                        uint32_t flagsChanged);
 
