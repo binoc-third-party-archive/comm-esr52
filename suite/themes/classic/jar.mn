@@ -150,6 +150,7 @@ classic.jar:
   skin/classic/communicator/sidebar/sidebarListView.css                 (communicator/sidebar/sidebarListView.css)
   skin/classic/communicator/xpinstall/xpinstall.css                     (communicator/xpinstall/xpinstall.css)
   skin/classic/communicator/icons/audioFeedIcon.png                     (communicator/icons/feedIcon.png)
+  skin/classic/communicator/icons/connecting.png                        (communicator/icons/connecting.png)
   skin/classic/communicator/icons/closeFullScreenVideo.png              (communicator/icons/closeFullScreenVideo.png)
   skin/classic/communicator/icons/close-button.gif                      (communicator/icons/close-button.gif)
   skin/classic/communicator/icons/offline.png                           (communicator/icons/offline.png)

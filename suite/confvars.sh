@@ -48,3 +48,5 @@ fi
 
 # Include the DevTools client, not just the server (which is the default)
 MOZ_DEVTOOLS=all
+# Include Lightning
+MOZ_CALENDAR=1

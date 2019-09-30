@@ -965,6 +965,12 @@ pref("services.sync.prefs.sync.xpinstall.whitelist.required", true);
 // Enable the DOM fullscreen API.
 pref("full-screen-api.enabled", true);
 
+// frg private
+pref("data_manager.debug",true);
+pref("browser.safebrowsing.debug",true);
+pref("network.IDN_show_punycode",true);
+pref("browser.toolbars.grippyhidden",true);
+
 // Most DevTools prefs are set from the shared file
 // devtools/client/preferences/devtools.js, but this one is currently set
 // per-app or per-channel.

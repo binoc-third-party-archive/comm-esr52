@@ -43,7 +43,11 @@ tabpanels {
 }
 
 .tabbrowser-tab[busy] {
-  list-style-image: url("chrome://communicator/skin/icons/loading.gif");
+  list-style-image: url("chrome://communicator/skin/icons/connecting.png");
+}
+
+.tabbrowser-tab[progress] {
+  list-style-image: url("chrome://global/skin/icons/loading.png");
 }
 
 .tabbrowser-tab[selected="true"] {
