@@ -68,7 +68,7 @@ var gCookiesWindow = {
     return aCookieA.rawHost == aStrippedHost &&
            aCookieA.name == aCookieB.name &&
            aCookieA.path == aCookieB.path &&
-           !ChromeUtils.compareOriginAttributes(aCookieA.originAttributes,
+           !ChromeUtils.isOriginAttributesEqual(aCookieA.originAttributes,
                                                 aCookieB.originAttributes);
   },
 
@@ -288,7 +288,7 @@ var gCookiesWindow = {
           if (item.rawHost == cookie.rawHost &&
               item.name == cookie.name &&
               item.path == cookie.path &&
-              !ChromeUtils.compareOriginAttributes(item.originAttributes,
+              !ChromeUtils.isOriginAttributesEqual(item.originAttributes,
                                                    cookie.originAttributes)) {
             parent.cookies.splice(i, removeCount);
           }
@@ -724,7 +724,7 @@ var gCookiesWindow = {
     for (i = 0; i < deleteItems.length; ++i) {
       var item = deleteItems[i];
       Services.cookies.remove(item.host, item.name, item.path,
-                              item.originAttributes, blockFutureCookies);
+                              blockFutureCookies, item.originAttributes);
     }
 
     if (nextSelected < 0)
